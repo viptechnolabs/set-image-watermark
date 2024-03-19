@@ -62,7 +62,7 @@ class ProcessImage implements ShouldQueue
         imagedestroy($watermark);
 
         // Dispatch an event with the URL to the watermarked image
-        event(new ImageProcessed(asset('storage/upload/' . basename($outputImagePath))));
+        //event(new ImageProcessed(asset('storage/upload/' . basename($outputImagePath))));
 
     }
 }
