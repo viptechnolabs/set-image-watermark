@@ -11,6 +11,11 @@
            required>
     <input type="submit">
 </form>
-
+<br>
+<br>
+<br>
+<br>
+<br>
+<a href="{{ route('getFiles') }}">Get multiple images in folder</a>
 </body>
 </html>
