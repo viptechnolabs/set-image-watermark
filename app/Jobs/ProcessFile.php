@@ -27,6 +27,8 @@ class ProcessFile implements ShouldQueue
     {
         $originalImagePath = storage_path('app/' . $this->imagePath);
         $watermarkPath = public_path('logo.png'); // Path to your watermark image
+        $additionalWatermarkPath = public_path('logo.png'); // Path to your additional watermark image
+        //$additionalWatermarkPath = public_path('logo-dark.png'); // Path to your additional watermark image
         $outputImagePath = storage_path('app/public/upload/' . basename($this->imagePath));
 
         // Verify original image exists
@@ -35,9 +37,13 @@ class ProcessFile implements ShouldQueue
             return;
         }
 
-        // Verify watermark image exists
+        // Verify watermark images exist
         if (!file_exists($watermarkPath)) {
             Log::error('Watermark image not found: ' . $watermarkPath);
+            return;
+        }
+        if (!file_exists($additionalWatermarkPath)) {
+            Log::error('Additional watermark image not found: ' . $additionalWatermarkPath);
             return;
         }
 
@@ -60,20 +66,33 @@ class ProcessFile implements ShouldQueue
             return;
         }
 
-        // Load the watermark image
+        // Load the watermarks
         $watermark = imagecreatefrompng($watermarkPath);
-        if (!$watermark) {
-            Log::error('Failed to load watermark: ' . $watermarkPath);
+        $additionalWatermark = imagecreatefrompng($additionalWatermarkPath);
+        if (!$watermark || !$additionalWatermark) {
+            Log::error('Failed to load one of the watermarks');
             imagedestroy($image);
+            if ($watermark) {
+                imagedestroy($watermark);
+            }
+            if ($additionalWatermark) {
+                imagedestroy($additionalWatermark);
+            }
             return;
         }
 
-        // Merge the images
-        $result = imagecopy($image, $watermark, 0, 0, 0, 0, imagesx($watermark), imagesy($watermark));
-        if (!$result) {
-            Log::error('Failed to merge images');
+        // Merge the main watermark to the top left
+        $result1 = imagecopy($image, $watermark, 0, 0, 0, 0, imagesx($watermark), imagesy($watermark));
+
+        // Merge the additional watermark to the bottom right
+        $result2 = imagecopy($image, $additionalWatermark, imagesx($image) - imagesx($additionalWatermark), imagesy($image) - imagesy($additionalWatermark), 0, 0, imagesx($additionalWatermark), imagesy($additionalWatermark));
+
+        // Check if merging was successful
+        if (!$result1 || !$result2) {
+            Log::error('Failed to merge one of the watermarks');
             imagedestroy($image);
             imagedestroy($watermark);
+            imagedestroy($additionalWatermark);
             return;
         }
 
@@ -100,10 +119,13 @@ class ProcessFile implements ShouldQueue
         // Clean up resources
         imagedestroy($image);
         imagedestroy($watermark);
+        imagedestroy($additionalWatermark);
 
         if ($success) {
             Log::info('Watermarked image saved: ' . $outputImagePath);
         }
     }
+
+
 }
 
